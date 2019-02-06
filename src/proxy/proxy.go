@@ -4,18 +4,11 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
-	"path/filepath"
+	"os/exec"
 )
 
 func redirect(w http.ResponseWriter, r *http.Request) {
-	filedir, err := filepath.Abs(filepath.Dir(os.Args[0]))
-	if err != nil {
-		log.Print(err)
-	}
-	filename := "playlist-url"
-
-	url, err := ioutil.ReadFile(filepath.Join(filedir, filename))
+	url, err := ioutil.ReadFile("/data/playlist-url")
 	if err != nil {
 		log.Print(err)
 	}
@@ -28,8 +21,18 @@ func redirect(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, string(url), 307)
 }
 
+func update(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("Running...\n"))
+	err := exec.Command("sh", "-c", "iptvgenerator > /dev/stdout").Start()
+	if err != nil {
+		log.Print(err)
+		w.Write([]byte(err.Error()))
+	}
+}
+
 func main() {
 	http.HandleFunc("/", redirect)
+	http.HandleFunc("/update", update)
 
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {

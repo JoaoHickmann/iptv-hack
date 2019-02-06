@@ -135,6 +135,6 @@ func main() {
 
 	log.Printf("New url '%s'", url)
 
-	err = ioutil.WriteFile("playlist-url", []byte(url), 0644)
+	err = ioutil.WriteFile("/data/playlist-url", []byte(url), 0644)
 	checkError(err)
 }

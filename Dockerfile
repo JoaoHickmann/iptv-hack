@@ -22,11 +22,9 @@ COPY --from=builder /root/bin/ /usr/bin
 RUN apk update && \
     apk upgrade && \
     apk add chromium chromium-chromedriver xvfb --no-cache && \
-    echo "50 4 * * * iptvgenerator" >> /etc/crontabs/root
+    echo "0 5 * * * iptvgenerator > /dev/stdout" >> /etc/crontabs/root
 
-WORKDIR /root
-
-VOLUME [ "/root" ]
+VOLUME [ "/data" ]
 
 EXPOSE 8080
 
