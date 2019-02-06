@@ -61,8 +61,7 @@ func clickElem(wd selenium.WebDriver, selectorBy, selectorValue string) {
 }
 func main() {
 	const (
-		seleniumPath     = "/usr/bin/selenium-server-standalone.jar"
-		chromeDriverPath = "/usr/bin/chromedriver"
+		chromeDriverPath = "chromedriver"
 		port             = 9393
 
 		loginTimeout   = 5
@@ -70,16 +69,15 @@ func main() {
 	)
 	opts := []selenium.ServiceOption{
 		selenium.StartFrameBuffer(), // Start an X frame buffer for the browser to run in.
-		selenium.ChromeDriver(chromeDriverPath),
 		selenium.Output(os.Stderr),
 	}
 
-	service, err := selenium.NewSeleniumService(seleniumPath, port, opts...)
+	service, err := selenium.NewChromeDriverService(chromeDriverPath, port, opts...)
 	checkError(err)
 	defer service.Stop()
 
 	// Connect to the WebDriver instance running locally.
-	caps := selenium.Capabilities{"browserName": "chrome"}
+	caps := selenium.Capabilities{}
 	caps.AddChrome(chrome.Capabilities{
 		Args: []string{
 			"--no-sandbox",

@@ -17,16 +17,17 @@ RUN go get github.com/tebeka/selenium && \
 
 FROM alpine:latest
 
-ADD src/bin /usr/bin
 COPY --from=builder /root/bin/ /usr/bin
 
 RUN apk update && \
     apk upgrade && \
-    apk add chromium chromium-chromedriver xvfb openjdk8-jre --no-cache && \
-    echo "@reboot proxy" >> /etc/crontabs/root && \
-    echo "@reboot iptvgenerator" >> /etc/crontabs/root && \
+    apk add chromium chromium-chromedriver xvfb --no-cache && \
     echo "50 4 * * * iptvgenerator" >> /etc/crontabs/root
+
+WORKDIR /root
+
+VOLUME [ "/root" ]
 
 EXPOSE 8080
 
-CMD ["crond", "-f"]
+CMD ["sh", "-c", "crond && proxy"]
