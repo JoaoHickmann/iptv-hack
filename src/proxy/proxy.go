@@ -23,10 +23,12 @@ func redirect(w http.ResponseWriter, r *http.Request) {
 
 func update(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Running...\n"))
-	err := exec.Command("sh", "-c", "iptvgenerator > /dev/stdout").Start()
+	output, err := exec.Command("python", "/usr/bin/iptvgenerator.py").Output()
 	if err != nil {
 		log.Print(err)
 		w.Write([]byte(err.Error()))
+	} else {
+		w.Write(output)
 	}
 }
 
