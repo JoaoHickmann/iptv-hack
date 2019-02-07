@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"os/exec"
 )
 
@@ -33,6 +34,7 @@ func update(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	log.SetOutput(os.Stdout)
 	http.HandleFunc("/", redirect)
 	http.HandleFunc("/update", update)
 

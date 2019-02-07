@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -90,6 +91,7 @@ func getPlaylistURL() string {
 }
 
 func main() {
+	log.SetOutput(os.Stdout)
 	http.DefaultClient.Jar, _ = cookiejar.New(nil)
 
 	if signUpNewUser() {
