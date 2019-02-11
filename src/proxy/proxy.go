@@ -42,9 +42,7 @@ func update(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
 		w.Write([]byte(err.Error()))
 	} else {
-		log.SetPrefix("")
-		log.Print(output)
-		log.SetPrefix("Proxy")
+		log.Print(string(output))
 		w.Write(output)
 	}
 }
