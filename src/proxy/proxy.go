@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -8,14 +9,25 @@ import (
 	"os/exec"
 )
 
+const (
+	playlistFile = "/data/playlist-url"
+)
+
 func redirect(w http.ResponseWriter, r *http.Request) {
-	url, err := ioutil.ReadFile("/data/playlist-url")
+	url, err := ioutil.ReadFile(playlistFile)
 	if err != nil {
 		log.Print(err)
+		w.WriteHeader(500)
+		w.Write([]byte("Error: " + err.Error()))
+		return
 	}
 
 	if string(url) == "" {
-		url = []byte("https://www.google.com/")
+		err = errors.New("Playlist URL not found!\nRun /update")
+		log.Print(err)
+		w.WriteHeader(404)
+		w.Write([]byte("Error: " + err.Error()))
+		return
 	}
 
 	log.Print(string(url))
@@ -27,19 +39,25 @@ func update(w http.ResponseWriter, r *http.Request) {
 	output, err := exec.Command("iptvgenerator").Output()
 	if err != nil {
 		log.Print(err)
+		w.WriteHeader(500)
 		w.Write([]byte(err.Error()))
 	} else {
+		log.SetPrefix("")
+		log.Print(output)
+		log.SetPrefix("Proxy")
 		w.Write(output)
 	}
 }
 
 func main() {
+	log.SetPrefix("PROXY: ")
 	log.SetOutput(os.Stdout)
+
 	http.HandleFunc("/", redirect)
 	http.HandleFunc("/update", update)
 
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
-		log.Fatal("ListenAndServe: ", err)
+		log.Panic(err)
 	}
 }

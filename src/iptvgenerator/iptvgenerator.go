@@ -128,7 +128,9 @@ func getPlaylistURL() (playlistURL string, err error) {
 }
 
 func main() {
+	log.SetPrefix("GENERATOR: ")
 	log.SetOutput(os.Stdout)
+
 	http.DefaultClient.Jar, _ = cookiejar.New(nil)
 
 	playlistURL, err := signUpAndGetURL()
