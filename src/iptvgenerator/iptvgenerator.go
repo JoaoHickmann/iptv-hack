@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -19,6 +20,8 @@ const (
 	dashURL   = "https://server.azsat.org/"
 
 	fg = "2e72627a07cac7284cf3bfa072b76a9b"
+
+	playlistFile = "/data/playlist-url"
 )
 
 func checkError(err error) {
@@ -27,17 +30,17 @@ func checkError(err error) {
 	}
 }
 
-func createLogin() string {
+func createUsername() (username string) {
 	rand.Seed(time.Now().UnixNano())
-	login := ""
+
 	for index := 0; index < 16; index++ {
-		login += string('a' + rand.Int31n('z'-'a'))
+		username += string('a' + rand.Int31n('z'-'a'))
 	}
-	return login
+	return
 }
 
-func createPostData(csrf, user string) url.Values {
-	data := url.Values{
+func createPostData(csrf, user string) (postData url.Values) {
+	postData = url.Values{
 		"step":        {"2"},
 		"fg":          {fg},
 		"csrf":        {csrf},
@@ -47,60 +50,92 @@ func createPostData(csrf, user string) url.Values {
 		"senha2":      {user},
 		"operadora[]": {"IPTV", "IPTV", "IPTV"},
 	}
-	return data
+	return
 }
 
-func getCSRF() string {
-	response, err := http.Get(signUpURL)
-	checkError(err)
+func getCSRF() (csrf string, err error) {
+	var response *http.Response
+	response, err = http.Get(signUpURL)
+	if err != nil {
+		return
+	}
 	defer response.Body.Close()
 
-	document, err := goquery.NewDocumentFromReader(response.Body)
-	checkError(err)
+	var document *goquery.Document
+	document, err = goquery.NewDocumentFromReader(response.Body)
+	if err != nil {
+		return
+	}
 
-	return document.Find("input[name=\"csrf\"]").Nodes[0].Attr[2].Val
+	csrf = document.Find("input[name=\"csrf\"]").Nodes[0].Attr[2].Val
+	return
 }
 
-func signUpNewUser() bool {
-	csrf := getCSRF()
+func signUpAndGetURL() (playlistURL string, err error) {
+	var csrf string
+	csrf, err = getCSRF()
+	if err != nil {
+		return
+	}
 
-	user := createLogin()
-	data := createPostData(csrf, user)
+	user := createUsername()
+	postData := createPostData(csrf, user)
 
-	response, err := http.PostForm(signUpURL, data)
-	checkError(err)
+	var response *http.Response
+	response, err = http.PostForm(signUpURL, postData)
+	if err != nil {
+		return
+	}
 	defer response.Body.Close()
-	bodyBytes, _ := ioutil.ReadAll(response.Body)
 
-	return strings.Contains(string(bodyBytes), "ALERTA DE SUCESSO")
+	var bodyBytes []byte
+	bodyBytes, err = ioutil.ReadAll(response.Body)
+	if err != nil {
+		return
+	}
+
+	if !strings.Contains(string(bodyBytes), "ALERTA DE SUCESSO") {
+		err = errors.New(string(bodyBytes))
+		return
+	}
+
+	playlistURL, err = getPlaylistURL()
+	return
 }
 
-func getPlaylistURL() string {
-	response, err := http.Get(dashURL)
-	checkError(err)
+func getPlaylistURL() (playlistURL string, err error) {
+	var response *http.Response
+	response, err = http.Get(dashURL)
+	if err != nil {
+		return
+	}
 	defer response.Body.Close()
 
 	response, err = http.Get(dashURL)
-	checkError(err)
+	if err != nil {
+		return
+	}
 	defer response.Body.Close()
 
-	doc, err := goquery.NewDocumentFromReader(response.Body)
-	checkError(err)
+	var document *goquery.Document
+	document, err = goquery.NewDocumentFromReader(response.Body)
+	if err != nil {
+		return
+	}
 
-	return doc.Find("input[name=\"url\"]").Nodes[0].Attr[3].Val
+	playlistURL = document.Find("input[name=\"url\"]").Nodes[0].Attr[3].Val
+	return
 }
 
 func main() {
 	log.SetOutput(os.Stdout)
 	http.DefaultClient.Jar, _ = cookiejar.New(nil)
 
-	if signUpNewUser() {
-		playlistURL := getPlaylistURL()
-		log.Print(playlistURL)
+	playlistURL, err := signUpAndGetURL()
+	checkError(err)
 
-		err := ioutil.WriteFile("/data/playlist-url", []byte(playlistURL), 0644)
-		checkError(err)
-	} else {
-		log.Print("FAILED!")
-	}
+	log.Print(playlistURL)
+
+	err = ioutil.WriteFile(playlistFile, []byte(playlistURL), 0644)
+	checkError(err)
 }
