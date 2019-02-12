@@ -17,7 +17,8 @@ FROM alpine:latest
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs
 COPY --from=builder /root/bin/ /usr/bin
 
-RUN echo "0 */3 * * * iptvgenerator > /dev/stdout" >> /etc/crontabs/root
+RUN echo "0 */3 * * * iptvgenerator" >> /etc/crontabs/root
+
 VOLUME [ "/data" ]
 
 EXPOSE 8080
