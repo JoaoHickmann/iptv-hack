@@ -13,20 +13,22 @@ const (
 	playlistFile = "/data/playlist-url"
 )
 
+func handleError(w *http.ResponseWriter, statusCode int, err error) {
+	log.Print(err)
+	(*w).WriteHeader(statusCode)
+	(*w).Write([]byte("Error: " + err.Error()))
+}
+
 func redirect(w http.ResponseWriter, r *http.Request) {
 	url, err := ioutil.ReadFile(playlistFile)
 	if err != nil {
-		log.Print(err)
-		w.WriteHeader(500)
-		w.Write([]byte("Error: " + err.Error()))
+		handleError(&w, 500, err)
 		return
 	}
 
 	if string(url) == "" {
 		err = errors.New("Playlist URL not found!\nRun /update")
-		log.Print(err)
-		w.WriteHeader(404)
-		w.Write([]byte("Error: " + err.Error()))
+		handleError(&w, 404, err)
 		return
 	}
 
@@ -35,21 +37,19 @@ func redirect(w http.ResponseWriter, r *http.Request) {
 }
 
 func update(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Running...\n"))
 	output, err := exec.Command("iptvgenerator").Output()
 	if err != nil {
-		log.Print(err)
-		w.WriteHeader(500)
-		w.Write([]byte(err.Error()))
-	} else {
-		log.Print(string(output))
-		w.Write(output)
+		handleError(&w, 500, err)
+		return
 	}
+
+	log.Print(string(output))
+	w.Write(output)
 }
 
 func main() {
-	log.SetPrefix("PROXY: ")
 	log.SetOutput(os.Stdout)
+	log.SetPrefix("PROXY: ")
 
 	http.HandleFunc("/", redirect)
 	http.HandleFunc("/update", update)
